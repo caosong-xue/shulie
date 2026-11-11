@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>找规律填下一项 · 分类刷题器（100题）</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 16px;
+    font-family: "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+    background: #f0f4f8;
+    color: #1e293b;
+    min-height: 100vh;
+  }
+  .app { max-width: 780px; margin: 0 auto; }
+  h1 { font-size: 24px; margin: 8px 0 4px; text-align: center; }
+  .subtitle { text-align: center; color: #64748b; font-size: 14px; margin: 0 0 20px; }
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
+    padding: 16px 18px;
+    margin-bottom: 14px;
+  }
+
+  /* 分类按钮 */
+  .cat-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cat-btn {
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 2px solid #e2e8f0;
+    background: #fff;
+    color: #475569;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+    white-space: nowrap;
+  }
+  .cat-btn:hover { border-color: #93c5fd; color: #2563eb; }
+  .cat-btn.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+  .cat-btn .cnt { opacity: .75; font-weight: 500; font-size: 12px; margin-left: 2px; }
+
+  /* 题目导航 */
+  .nav-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .nav-header #navInfo { font-size: 13px; color: #64748b; font-weight: 600; }
+  .question-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    max-height: 168px;
+    overflow-y: auto;
+    padding: 4px;
+  }
+  .nav-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    color: #334155;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    position: relative;
+    transition: all .15s;
+    flex-shrink: 0;
+  }
+  .nav-btn:hover { background: #eff6ff; border-color: #93c5fd; }
+  .nav-btn.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+  .nav-btn.correct::after,
+  .nav-btn.wrong::after {
+    content: '';
+    position: absolute;
+    top: 3px; right: 3px;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+  }
+  .nav-btn.correct::after { background: #22c55e; }
+  .nav-btn.wrong::after { background: #ef4444; }
+
+  /* 题目卡片 */
+  .q-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: #64748b;
+    margin-bottom: 12px;
+  }
+  .q-meta #qType {
+    background: #e0f2fe;
+    color: #0369a1;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+  }
+  .question-text {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-align: center;
+    padding: 18px 8px;
+    background: #f8fafc;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    word-break: break-all;
+    line-height: 1.5;
+  }
+  .input-row { display: flex; gap: 10px; margin-bottom: 12px; }
+  .input-row input {
+    flex: 1;
+    padding: 12px 14px;
+    font-size: 18px;
+    border: 2px solid #cbd5e1;
+    border-radius: 10px;
+    outline: none;
+    transition: border-color .15s;
+    min-width: 0;
+  }
+  .input-row input:focus { border-color: #3b82f6; }
+  .btn {
+    border: none;
+    border-radius: 10px;
+    padding: 11px 16px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    background: #e2e8f0;
+    color: #334155;
+    transition: background .15s, transform .1s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: #cbd5e1; }
+  .btn:active { transform: scale(0.98); }
+  .btn.primary { background: #3b82f6; color: #fff; }
+  .btn.primary:hover { background: #2563eb; }
+  .btn.danger { background: #fee2e2; color: #b91c1c; }
+  .btn.danger:hover { background: #fecaca; }
+  .btn.small { padding: 6px 12px; font-size: 13px; }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn-row .btn { flex: 1; min-width: 110px; }
+  .feedback {
+    min-height: 24px;
+    margin-top: 12px;
+    font-weight: 600;
+    font-size: 16px;
+  }
+  .feedback.success { color: #16a34a; }
+  .feedback.error { color: #dc2626; }
+  .feedback.warn { color: #d97706; }
+  .explain-box {
+    margin-top: 14px;
+    padding: 16px;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 12px;
+    font-size: 15px;
+    line-height: 1.75;
+    white-space: pre-wrap;
+    color: #14532d;
+  }
+  .hidden { display: none !important; }
+
+  /* 错题本 */
+  .wrong-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .wrong-header h2 { font-size: 18px; margin: 0; }
+  .wrong-header > div { display: flex; align-items: center; gap: 10px; }
+  #wrongCount { font-size: 13px; color: #64748b; }
+  .wrong-list { max-height: 480px; overflow-y: auto; }
+  .wrong-item {
+    padding: 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    background: #fafafa;
+  }
+  .wrong-title {
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .wrong-answer { font-size: 14px; margin-bottom: 8px; color: #334155; }
+  .wrong-answer strong { color: #16a34a; }
+  .user-ans { color: #dc2626; font-weight: 600; }
+  .wrong-explain {
+    font-size: 13px;
+    line-height: 1.65;
+    color: #475569;
+    background: #fff;
+    border-radius: 8px;
+    padding: 10px;
+    white-space: pre-wrap;
+  }
+  .wrong-time { font-size: 11px; color: #94a3b8; margin-top: 6px; text-align: right; }
+  .empty { text-align: center; color: #94a3b8; padding: 28px 0; font-size: 14px; }
+
+  @media (max-width: 480px) {
+    .question-text { font-size: 22px; padding: 14px 6px; }
+    .input-row { flex-direction: column; }
+    .input-row .btn { width: 100%; }
+    .btn-row .btn { min-width: 100%; }
+    .nav-btn { width: 34px; height: 34px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>🔢 找规律填下一项</h1>
+  <p class="subtitle">分类刷题 · 100 道题 · 等差 / 二阶等差 / 等比 / 正负交替 / 奇偶拆分 / 递推 / 分数 / 阶乘 / 特殊</p>
+
+  <!-- 分类按钮 -->
+  <div class="card">
+    <div class="cat-btns" id="catBtns"></div>
+  </div>
+
+  <!-- 题目导航 -->
+  <div class="card">
+    <div class="nav-header">
+      <span id="navInfo">—</span>
+      <button id="randomBtn" class="btn small">🎲 当前分类随机一题</button>
+    </div>
+    <div class="question-nav" id="questionNav"></div>
+  </div>
+
+  <!-- 题目卡片 -->
+  <div class="card">
+    <div class="q-meta">
+      <span id="qIndex">—</span>
+      <span id="qType">—</span>
+    </div>
+    <div id="questionText" class="question-text">…</div>
+    <div class="input-row">
+      <input id="answerInput" type="text" placeholder="输入答案，如 66 或 6/7" autocomplete="off">
+      <button id="submitBtn" class="btn primary">提交答案</button>
+    </div>
+    <div class="btn-row">
+      <button id="prevBtn" class="btn">← 上一题</button>
+      <button id="showExplainBtn" class="btn">显示答案解析</button>
+      <button id="nextBtn" class="btn">下一题 →</button>
+    </div>
+    <div id="feedback" class="feedback"></div>
+    <div id="explainBox" class="explain-box hidden"></div>
+  </div>
+
+  <!-- 错题本 -->
+  <div class="card">
+    <div class="wrong-header">
+      <h2>📕 错题本</h2>
+      <div>
+        <span id="wrongCount">0 题</span>
+        <button id="clearWrongBtn" class="btn danger small">清空错题</button>
+      </div>
+    </div>
+    <div id="wrongList" class="wrong-list">
+      <div class="empty">暂无错题，继续加油！</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================= 题库生成 ================= */
+const bank = [];
+let idCounter = 0;
+
+function addQ(seq, answer, type, explain) {
+  idCounter++;
+  bank.push({
+    id: idCounter,
+    seq: seq,
+    answer: String(answer),
+    type: type,
+    explain: explain || null
+  });
+}
+
+function buildBank() {
+  bank.length = 0;
+  idCounter = 0;
+
+  /* ---------- 1. 等差数列（10道，id 1-10） ---------- */
+  [
+    [2, 3], [5, 4], [10, 5], [1, 7], [20, 6],
+    [3, 8], [100, 10], [7, 9], [12, 11], [50, 15]
+  ].forEach(([a1, d]) => {
+    const seq = [];
+    for (let i = 0; i < 6; i++) seq.push(a1 + i * d);
+    addQ(seq.slice(0, 5), seq[5], 'arith');
+  });
+
+  /* ---------- 2. 二阶等差（30道，id 11-40） ---------- */
+  const secondParams = [
+    [1, 0, 0], [1, 1, 0], [1, 2, 0], [1, 0, 1], [1, 1, 1], [1, -1, 2],
+    [2, 0, 0], [2, 1, 0], [2, 2, 0], [2, 0, 1], [2, 1, 1], [2, -1, 2],
+    [3, 0, 0], [3, 1, 0], [3, 2, 0], [3, 0, 1], [3, 1, 1], [3, -1, 2],
+    [1, 3, 0], [1, 4, 0], [2, 3, 0], [2, 4, 0],
+    [4, 0, 0], [4, 1, 0], [4, 2, 0], [4, 0, 1], [4, 1, 1],
+    [1, -2, 4], [1, -3, 5], [2, -2, 3]
+  ];
+  secondParams.forEach(([a, b, c]) => {
+    const seq = [];
+    for (let n = 1; n <= 6; n++) seq.push(a * n * n + b * n + c);
+    addQ(seq.slice(0, 5), seq[5], 'second');
+  });
+
+  /* ---------- 3. 等比数列（10道，id 41-50） ---------- */
+  [
+    [1, 2], [2, 3], [3, 2], [5, 3], [1, 5],
+    [2, 4], [10, 2], [4, 3], [6, 2], [7, 2]
+  ].forEach(([a1, r]) => {
+    const seq = [];
+    for (let i = 0; i < 6; i++) seq.push(a1 * Math.pow(r, i));
+    addQ(seq.slice(0, 5), seq[5], 'geo');
+  });
+
+  /* ---------- 4. 正负交替（10道，id 51-60） ---------- */
+  const altData = [
+    { abs: [1, 3, 5, 7, 9, 11], start: -1, signText: '负、正、负、正……' },
+    { abs: [2, 4, 6, 8, 10, 12], start: 1, signText: '正、负、正、负……' },
+    { abs: [1, 2, 3, 4, 5, 6], start: -1, signText: '负、正、负、正……' },
+    { abs: [3, 6, 9, 12, 15, 18], start: 1, signText: '正、负、正、负……' },
+    { abs: [1, 4, 9, 16, 25, 36], start: -1, signText: '负、正、负、正……', type: 'square' },
+    { abs: [2, 5, 8, 11, 14, 17], start: 1, signText: '正、负、正、负……' },
+    { abs: [10, 20, 30, 40, 50, 60], start: -1, signText: '负、正、负、正……' },
+    { abs: [1, 8, 27, 64, 125, 216], start: 1, signText: '正、负、正、负……', type: 'cube' },
+    { abs: [4, 8, 12, 16, 20, 24], start: -1, signText: '负、正、负、正……' },
+    { abs: [5, 10, 15, 20, 25, 30], start: 1, signText: '正、负、正、负……' }
+  ];
+  altData.forEach(item => {
+    const seq = item.abs.map((v, i) => (i % 2 === 0 ? item.start : -item.start) * v);
+    const show = seq.slice(0, 5);
+    const answer = seq[5];
+    let absExplain = '';
+    if (item.type === 'square') {
+      absExplain = '绝对值是平方数：1²，2²，3²，4²，5²，6²。';
+    } else if (item.type === 'cube') {
+      absExplain = '绝对值是立方数：1³，2³，3³，4³，5³，6³。';
+    } else {
+      const d = item.abs[1] - item.abs[0];
+      absExplain = `绝对值序列 ${item.abs.join('，')} 是等差数列，公差为 ${d}。`;
+    }
+    const explain = `✅ 解题步骤（符号 + 绝对值）：\n1. 先看符号：${item.signText}，下一项符号为“${answer > 0 ? '正' : '负'}”。\n2. 再看绝对值：${absExplain}\n3. 所以下一项 = ${answer}。\n\n💡 其他思路：\n• 把正负号单独拿出来，先定符号，再算绝对值。`;
+    addQ(show, answer, 'alt', explain);
+  });
+
+  /* ---------- 5. 奇偶拆分（10道，id 61-70） ---------- */
+  const oddEvenParams = [
+    { odd: [1, 3, 5], even: [2, 4, 6] },
+    { odd: [2, 5, 8], even: [10, 15, 20] },
+    { odd: [1, 4, 7], even: [2, 6, 10] },
+    { odd: [10, 20, 30], even: [5, 10, 15] },
+    { odd: [2, 7, 12], even: [3, 9, 15] },
+    { odd: [3, 6, 9], even: [12, 18, 24] },
+    { odd: [1, 5, 9], even: [2, 8, 14] },
+    { odd: [100, 90, 80], even: [50, 45, 40] },
+    { odd: [2, 4, 6], even: [3, 6, 9] },
+    { odd: [1, 10, 19], even: [5, 15, 25] }
+  ];
+  oddEvenParams.forEach(({ odd, even }) => {
+    const seq = [];
+    for (let i = 0; i < 3; i++) {
+      seq.push(odd[i]);
+      seq.push(even[i]);
+    }
+    const show = seq.slice(0, 5);
+    const answer = seq[5];
+    const oddD = odd[1] - odd[0];
+    const evenD = even[1] - even[0];
+    const explain = `✅ 解题步骤（奇偶拆分）：\n1. 奇数位：第1、3、5项为 ${odd.join('，')}，是等差数列，公差为 ${oddD}。\n2. 偶数位：第2、4项为 ${even[0]}，${even[1]}，是等差数列，公差为 ${evenD}。\n3. 问号是第6项（偶数位第3项），下一项 = ${even[1]} + ${evenD} = ${answer}。\n\n💡 其他思路：\n• 把数列按位置分成两列，分别找规律。`;
+    addQ(show, answer, 'oddEven', explain);
+  });
+
+  /* ---------- 6. 斐波那契型递推（10道，id 71-80） ---------- */
+  const fibParams = [
+    [1, 1], [1, 2], [2, 3], [3, 4], [1, 3],
+    [2, 5], [5, 8], [4, 6], [1, 4], [3, 5]
+  ];
+  fibParams.forEach(([a, b]) => {
+    const seq = [a, b];
+    for (let i = 2; i < 6; i++) seq.push(seq[i - 1] + seq[i - 2]);
+    const show = seq.slice(0, 5);
+    const answer = seq[5];
+    const explain = `✅ 解题步骤（递推法）：\n1. 观察发现：从第3项起，每一项等于前两项之和。\n   验证：${seq[0]} + ${seq[1]} = ${seq[2]}，${seq[1]} + ${seq[2]} = ${seq[3]}……\n2. 下一项 = 第4项 + 第5项 = ${seq[3]} + ${seq[4]} = ${answer}。\n\n💡 其他思路：\n• 这就是斐波那契型递推，先看前两项如何得到第三项。`;
+    addQ(show, answer, 'fib', explain);
+  });
+
+  /* ---------- 7. 分数数列（10道，id 81-90） ---------- */
+  const fractionData = [
+    { seq: ['1/2', '2/3', '3/4', '4/5', '5/6'], ans: '6/7', exp: '分子 1,2,3,4,5,6 依次加 1；分母 2,3,4,5,6,7 依次加 1。' },
+    { seq: ['1/2', '2/4', '3/8', '4/16', '5/32'], ans: '6/64', exp: '分子 1,2,3,4,5,6 依次加 1；分母 2,4,8,16,32,64 每次乘 2。' },
+    { seq: ['2/3', '4/6', '6/9', '8/12', '10/15'], ans: '12/18', exp: '分子每次加 2；分母每次加 3。' },
+    { seq: ['1/3', '2/6', '3/12', '4/24', '5/48'], ans: '6/96', exp: '分子每次加 1；分母每次乘 2。' },
+    { seq: ['3/4', '4/7', '5/10', '6/13', '7/16'], ans: '8/19', exp: '分子每次加 1；分母每次加 3。' },
+    { seq: ['1/2', '3/4', '5/6', '7/8', '9/10'], ans: '11/12', exp: '分子 1,3,5,7,9,11 每次加 2；分母 2,4,6,8,10,12 每次加 2。' },
+    { seq: ['2/5', '4/10', '6/15', '8/20', '10/25'], ans: '12/30', exp: '分子每次加 2；分母每次加 5。' },
+    { seq: ['1/4', '2/9', '3/16', '4/25', '5/36'], ans: '6/49', exp: '分子 1,2,3,4,5,6；分母是 2²,3²,4²,5²,6²,7²。' },
+    { seq: ['5/2', '6/4', '7/8', '8/16', '9/32'], ans: '10/64', exp: '分子每次加 1；分母每次乘 2。' },
+    { seq: ['1/1', '2/3', '3/5', '4/7', '5/9'], ans: '6/11', exp: '分子每次加 1；分母 1,3,5,7,9,11 每次加 2。' }
+  ];
+  fractionData.forEach(item => {
+    const explain = `✅ 解题步骤（分数数列）：\n${item.exp}\n所以下一项 = ${item.ans}。\n\n💡 其他思路：\n• 分子、分母分别成数列，分别找规律。`;
+    addQ(item.seq, item.ans, 'fraction', explain);
+  });
+
+  /* ---------- 8. 阶乘数列（5道，id 91-95） ---------- */
+  const factorialData = [
+    { seq: [1, 2, 6, 24, 120], ans: '720', exp: '1!，2!，3!，4!，5!，下一项是 6! = 720。' },
+    { seq: [2, 6, 24, 120, 720], ans: '5040', exp: '2!，3!，4!，5!，6!，下一项是 7! = 5040。' },
+    { seq: [2, 4, 9, 28, 125], ans: '726', exp: '规律：n! + n。1!+1=2，2!+2=4，3!+3=9，4!+4=28，5!+5=125，下一项 6!+6=726。' },
+    { seq: [1, 1, 2, 6, 24], ans: '120', exp: '0!，1!，2!，3!，4!，下一项是 5! = 120。' },
+    { seq: [1, 4, 18, 96, 600], ans: '4320', exp: '规律：n! × n。1!×1=1，2!×2=4，3!×3=18，4!×4=96，5!×5=600，下一项 6!×6=4320。' }
+  ];
+  factorialData.forEach(item => {
+    const explain = `✅ 解题步骤（阶乘规律）：\n${item.exp}\n\n💡 其他思路：\n• 记住常见阶乘值：1!=1，2!=2，3!=6，4!=24，5!=120，6!=720。`;
+    addQ(item.seq, item.ans, 'factorial', explain);
+  });
+
+  /* ---------- 9. 特殊数列（5道，id 96-100） ---------- */
+  const otherData = [
+    { seq: [1, 4, 9, 16, 25], ans: '36', exp: '平方数：1²，2²，3²，4²，5²，下一项 6² = 36。' },
+    { seq: [1, 8, 27, 64, 125], ans: '216', exp: '立方数：1³，2³，3³，4³，5³，下一项 6³ = 216。' },
+    { seq: [1, 3, 6, 10, 15], ans: '21', exp: '三角形数：1，1+2，1+2+3，1+2+3+4，1+2+3+4+5，下一项加 6 得 21。' },
+    { seq: [3, 8, 15, 24, 35], ans: '48', exp: '规律：n(n+2)。1×3=3，2×4=8，3×5=15，4×6=24，5×7=35，下一项 6×8=48。' },
+    { seq: [3, 6, 11, 20, 37], ans: '70', exp: '规律：2ⁿ+n。2¹+1=3，2²+2=6，2³+3=11，2⁴+4=20，2⁵+5=37，下一项 2⁶+6=70。' }
+  ];
+  otherData.forEach(item => {
+    const explain = `✅ 解题步骤（特殊数列）：\n${item.exp}\n\n💡 其他思路：\n• 先观察数字是否与平方数、立方数、三角形数等有关。`;
+    addQ(item.seq, item.ans, 'other', explain);
+  });
+}
+
+/* ================= 题型与分类 ================= */
+const CATEGORIES = [
+  { key: 'all', name: '全部' },
+  { key: 'arith', name: '等差' },
+  { key: 'second', name: '二阶等差' },
+  { key: 'geo', name: '等比' },
+  { key: 'alt', name: '正负交替' },
+  { key: 'oddEven', name: '奇偶拆分' },
+  { key: 'fib', name: '递推' },
+  { key: 'fraction', name: '分数' },
+  { key: 'factorial', name: '阶乘' },
+  { key: 'other', name: '特殊' }
+];
+
+function typeName(t) {
+  const map = {
+    arith: '等差数列',
+    second: '二阶等差',
+    geo: '等比数列',
+    alt: '正负交替',
+    oddEven: '奇偶拆分',
+    fib: '递推数列',
+    fraction: '分数数列',
+    factorial: '阶乘数列',
+    other: '特殊数列'
+  };
+  return map[t] || '找规律';
+}
+
+/* ================= 解析生成 ================= */
+function buildExplain(q) {
+  if (q.explain) return q.explain;
+  const seq = q.seq;
+
+  if (q.type === 'arith') {
+    const d = seq[1] - seq[0];
+    const ds = [];
+    for (let i = 1; i < seq.length; i++) ds.push(seq[i] - seq[i - 1]);
+    return `✅ 解题步骤（逐差法）：\n1. 一阶差：${ds.join('，')}\n2. 差值恒为 ${d}，是等差数列。\n3. 下一项 = ${seq[seq.length - 1]} + ${d} = ${q.answer}\n\n💡 其他思路：\n• 首项 + (项数-1)×公差。`;
+  }
+
+  if (q.type === 'second') {
+    const d1 = [];
+    for (let i = 1; i < seq.length; i++) d1.push(seq[i] - seq[i - 1]);
+    const d2 = [];
+    for (let i = 1; i < d1.length; i++) d2.push(d1[i] - d1[i - 1]);
+    const nextD1 = d1[d1.length - 1] + d2[0];
+    return `✅ 解题步骤（逐差法，二阶等差）：\n1. 一阶差：${d1.join('，')}\n2. 二阶差：${d2.join('，')}，恒为 ${d2[0]}。\n3. 下一阶差 = ${d1[d1.length - 1]} + ${d2[0]} = ${nextD1}\n4. 下一项 = ${seq[seq.length - 1]} + ${nextD1} = ${q.answer}\n\n💡 其他思路：\n• 观察相邻两项差的变化，每次增加 ${d2[0]}。\n• 也可以尝试用通项公式 an²+bn+c 验证。`;
+  }
+
+  if (q.type === 'geo') {
+    const r = seq[1] / seq[0];
+    return `✅ 解题步骤（等比法）：\n1. 相邻项比值：${seq[1]}÷${seq[0]} = ${r}，每一项都是前一项的 ${r} 倍。\n2. 下一项 = ${seq[seq.length - 1]} × ${r} = ${q.answer}\n\n💡 其他思路：\n• 后项除以前项，商恒定。`;
+  }
+
+  return '解析生成中…';
+}
+
+/* ================= 页面状态 ================= */
+const $ = id => document.getElementById(id);
+let currentCategory = 'all';
+let currentList = [];
+let currentIndex = 0;
+let currentQ = null;
+const sessionAnswered = new Map(); // id -> 'correct' | 'wrong'
+
+/* ---------- 分类按钮渲染 ---------- */
+function renderCategories() {
+  const container = $('catBtns');
+  container.innerHTML = '';
+  CATEGORIES.forEach(cat => {
+    const count = cat.key === 'all' ? bank.length : bank.filter(q => q.type === cat.key).length;
+    const btn = document.createElement('button');
+    btn.className = 'cat-btn' + (cat.key === currentCategory ? ' active' : '');
+    btn.innerHTML = `${cat.name}<span class="cnt">(${count})</span>`;
+    btn.addEventListener('click', () => switchCategory(cat.key));
+    container.appendChild(btn);
+  });
+}
+
+/* ---------- 切换分类 ---------- */
+function switchCategory(key) {
+  currentCategory = key;
+  currentList = key === 'all' ? bank.slice() : bank.filter(q => q.type === key);
+  currentList.sort((a, b) => a.id - b.id);
+  currentIndex = 0;
+  renderCategories();
+  if (currentList.length) {
+    loadQuestion(currentList[0]);
+  } else {
+    $('navInfo').textContent = '该分类暂无题目';
+    $('questionNav').innerHTML = '';
+    $('questionText').textContent = '—';
+  }
+}
+
+/* ---------- 题目导航渲染 ---------- */
+function renderNav() {
+  const container = $('questionNav');
+  container.innerHTML = '';
+  const wrongSet = new Set(getWrongs().map(w => w.id));
+  const cat = CATEGORIES.find(c => c.key === currentCategory);
+  $('navInfo').textContent = `当前分类：${cat ? cat.name : '全部'} · 共 ${currentList.length} 题 · 点击题号可自由跳转`;
+
+  currentList.forEach((q, i) => {
+    const btn = document.createElement('button');
+    let cls = 'nav-btn';
+    if (i === currentIndex) cls += ' active';
+    const st = sessionAnswered.get(q.id);
+    if (st === 'correct') cls += ' correct';
+    else if (st === 'wrong' || wrongSet.has(q.id)) cls += ' wrong';
+    btn.className = cls;
+    btn.textContent = q.id;
+    btn.title = `第 ${q.id} 题`;
+    btn.addEventListener('click', () => {
+      currentIndex = i;
+      loadQuestion(q);
+    });
+    container.appendChild(btn);
+  });
+
+  // 滚动到当前题
+  const activeBtn = container.querySelector('.nav-btn.active');
+  if (activeBtn) {
+    activeBtn.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
+}
+
+/* ---------- 加载题目 ---------- */
+function loadQuestion(q) {
+  currentQ = q;
+  $('qIndex').textContent = `第 ${q.id} 题 / 共 ${bank.length} 题`;
+  $('qType').textContent = typeName(q.type);
+  $('questionText').textContent = q.seq.join('，') + '，？';
+  $('answerInput').value = '';
+  $('feedback').textContent = '';
+  $('feedback').className = 'feedback';
+  $('explainBox').classList.add('hidden');
+  $('explainBox').textContent = '';
+  renderNav();
+  $('answerInput').focus();
+}
+
+/* ---------- 上一题 / 下一题 / 随机 ---------- */
+function nextQuestion() {
+  if (!currentList.length) return;
+  currentIndex = (currentIndex + 1) % currentList.length;
+  loadQuestion(currentList[currentIndex]);
+}
+
+function prevQuestion() {
+  if (!currentList.length) return;
+  currentIndex = (currentIndex - 1 + currentList.length) % currentList.length;
+  loadQuestion(currentList[currentIndex]);
+}
+
+function randomQuestion() {
+  if (!currentList.length) return;
+  if (currentList.length === 1) {
+    currentIndex = 0;
+  } else {
+    let idx;
+    do {
+      idx = Math.floor(Math.random() * currentList.length);
+    } while (idx === currentIndex);
+    currentIndex = idx;
+  }
+  loadQuestion(currentList[currentIndex]);
+}
+
+/* ---------- 显示解析 ---------- */
+function showExplain() {
+  if (!currentQ) return;
+  const box = $('explainBox');
+  box.textContent = buildExplain(currentQ);
+  box.classList.remove('hidden');
+}
+
+/* ---------- 提交答案 ---------- */
+function submitAnswer() {
+  if (!currentQ) return;
+  const user = $('answerInput').value.trim();
+  if (!user) {
+    $('feedback').textContent = '请先输入答案哦～';
+    $('feedback').className = 'feedback warn';
+    return;
+  }
+  const correct = user === currentQ.answer;
+  const fb = $('feedback');
+  if (correct) {
+    fb.textContent = '✅ 回答正确！真棒！';
+    fb.className = 'feedback success';
+    sessionAnswered.set(currentQ.id, 'correct');
+  } else {
+    fb.textContent = `❌ 回答错误。正确答案是：${currentQ.answer}`;
+    fb.className = 'feedback error';
+    sessionAnswered.set(currentQ.id, 'wrong');
+    saveWrong(currentQ, user);
+  }
+  showExplain();
+  renderNav();
+}
+
+/* ---------- 错题本 ---------- */
+function getWrongs() {
+  try {
+    return JSON.parse(localStorage.getItem('find_pattern_wrongs') || '[]');
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveWrongs(list) {
+  localStorage.setItem('find_pattern_wrongs', JSON.stringify(list));
+}
+
+function saveWrong(q, userAnswer) {
+  const list = getWrongs();
+  const existing = list.find(item => item.id === q.id);
+  const record = {
+    id: q.id,
+    seq: q.seq,
+    answer: q.answer,
+    explain: buildExplain(q),
+    userAnswer: userAnswer,
+    time: new Date().toLocaleString()
+  };
+  if (existing) {
+    existing.userAnswer = userAnswer;
+    existing.time = record.time;
+    existing.answer = record.answer;
+  } else {
+    list.push(record);
+  }
+  saveWrongs(list);
+  renderWrongs();
+}
+
+function renderWrongs() {
+  const list = getWrongs();
+  const container = $('wrongList');
+  $('wrongCount').textContent = `${list.length} 题`;
+  if (list.length === 0) {
+    container.innerHTML = '<div class="empty">暂无错题，继续加油！</div>';
+    return;
+  }
+  container.innerHTML = list.map(item => `
+    <div class="wrong-item">
+      <div class="wrong-title">${item.seq.join('，')}，？</div>
+      <div class="wrong-answer">正确答案：<strong>${item.answer}</strong>　你的答案：<span class="user-ans">${escapeHtml(item.userAnswer)}</span></div>
+      <div class="wrong-explain">${escapeHtml(item.explain)}</div>
+      <div class="wrong-time">${item.time}</div>
+    </div>
+  `).join('');
+}
+
+function clearWrongs() {
+  if (!confirm('确定清空错题本吗？此操作不可恢复。')) return;
+  localStorage.removeItem('find_pattern_wrongs');
+  renderWrongs();
+  renderNav();
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/* ---------- 初始化 ---------- */
+document.addEventListener('DOMContentLoaded', () => {
+  buildBank();
+  renderCategories();
+  renderWrongs();
+
+  // 默认显示「全部」分类，从第 1 题开始
+  switchCategory('all');
+
+  $('submitBtn').addEventListener('click', submitAnswer);
+  $('showExplainBtn').addEventListener('click', showExplain);
+  $('nextBtn').addEventListener('click', nextQuestion);
+  $('prevBtn').addEventListener('click', prevQuestion);
+  $('randomBtn').addEventListener('click', randomQuestion);
+  $('clearWrongBtn').addEventListener('click', clearWrongs);
+  $('answerInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitAnswer();
+  });
+
+  // 键盘左右键快速切换题目（输入框外）
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.key === 'ArrowRight') nextQuestion();
+    if (e.key === 'ArrowLeft') prevQuestion();
+  });
+
+  console.log('题库总题数：', bank.length);
+});
+</script>
+</body>
+</html>
